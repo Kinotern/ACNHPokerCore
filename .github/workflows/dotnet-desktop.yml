@@ -1,0 +1,48 @@
+name: Build ACNHPokerCore
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        configuration: [Debug, Release]
+    
+    runs-on: windows-latest
+    
+    steps:
+    - name: 签出代码
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: 安装 .NET 9.0
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+        include-prerelease: true  # 如果9.0还在预览版，需要这个
+
+    - name: 安装 MSBuild
+      uses: microsoft/setup-msbuild@v2
+
+    - name: 还原 NuGet 包
+      run: nuget restore ACNHPokerCore.sln
+
+    - name: 构建解决方案
+      run: msbuild ACNHPokerCore.sln /p:Configuration=${{ matrix.configuration }} /p:Platform="Any CPU"
+
+    - name: 执行单元测试
+      run: dotnet test ACNHPokerCore.sln --configuration ${{ matrix.configuration }} --no-build --verbosity normal
+      continue-on-error: true
+
+    - name: 上传构建工件
+      uses: actions/upload-artifact@v4
+      with:
+        name: ACNHPokerCore-${{ matrix.configuration }}
+        path: |
+          **/bin/${{ matrix.configuration }}/
+          !**/obj/
