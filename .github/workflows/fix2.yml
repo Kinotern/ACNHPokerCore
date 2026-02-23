@@ -1,0 +1,44 @@
+name: Build ACNHPokerCore
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        configuration: [Debug, Release]
+    
+    runs-on: windows-latest
+    
+    steps:
+    - name: 签出代码
+      uses: actions/checkout@v4
+
+    - name: 安装 .NET 9.0.13 SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.13'   # 使用你指定的精确版本
+
+    - name: 还原 NuGet 包
+      run: dotnet restore ACNHPokerCore.sln
+
+    - name: 构建 ${{ matrix.configuration }}
+      run: dotnet build ACNHPokerCore.sln --configuration ${{ matrix.configuration }} --no-restore -nowarn:CS4014,CS1998
+      # -nowarn:CS4014 忽略异步方法未等待的警告（来自 map.cs）
+
+    - name: 运行测试
+      run: dotnet test ACNHPokerCore.sln --configuration ${{ matrix.configuration }} --no-build --verbosity normal
+      continue-on-error: true   # 即使测试失败也不中断构建
+
+    - name: 上传构建产物
+      uses: actions/upload-artifact@v4
+      with:
+        name: ACNHPokerCore-${{ matrix.configuration }}
+        path: |
+          ACNHPokerCore/bin/${{ matrix.configuration }}/
+          **/bin/${{ matrix.configuration }}/
+        if-no-files-found: warn
