@@ -1,0 +1,39 @@
+name: Release ACNHPokerCore
+
+on:
+  push:
+    tags:
+      - 'v*'   # 推送 v1.0.0 这种 tag 时触发
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+
+    steps:
+    - name: 签出代码
+      uses: actions/checkout@v4
+
+    - name: 安装 .NET 9 SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+
+    - name: 还原 NuGet 包
+      run: dotnet restore ACNHPokerCore.sln
+
+    - name: 构建 Release
+      run: dotnet build ACNHPokerCore.sln --configuration Release --no-restore /nowarn:CS4014,CS1998
+
+    - name: 发布项目
+      run: dotnet publish ACNHPokerCore.sln -c Release -o publish --no-build
+
+    - name: 压缩发布文件
+      run: |
+        powershell Compress-Archive -Path publish\* -DestinationPath ACNHPokerCore-${{ github.ref_name }}.zip
+
+    - name: 创建 Release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: ACNHPokerCore-${{ github.ref_name }}.zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
