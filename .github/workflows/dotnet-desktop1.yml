@@ -1,0 +1,41 @@
+name: Build ACNHPokerCore
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    
+    steps:
+    - name: 签出代码
+      uses: actions/checkout@v4
+
+    - name: 安装 .NET 9.0
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+        include-prerelease: true
+
+    - name: 构建 Debug
+      run: dotnet build ACNHPokerCore.sln --configuration Debug
+
+    - name: 构建 Release
+      run: dotnet build ACNHPokerCore.sln --configuration Release
+
+    - name: 上传 Debug 构建
+      uses: actions/upload-artifact@v4
+      with:
+        name: ACNHPokerCore-Debug
+        path: ACNHPokerCore/bin/Debug/**/*
+        if-no-files-found: warn
+
+    - name: 上传 Release 构建
+      uses: actions/upload-artifact@v4
+      with:
+        name: ACNHPokerCore-Release
+        path: ACNHPokerCore/bin/Release/**/*
+        if-no-files-found: warn
